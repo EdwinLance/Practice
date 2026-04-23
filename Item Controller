@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
+class ItemController extends Controller
+{
+    public function getTouristSpots()
+    {
+        $url = "https://raw.githubusercontent.com/senseihatakekakashi/ph-tourist-spots/main/data.json";
+
+        try {
+      
+            $response = Http::get($url);
+
+            if ($response->failed()) {
+                return response()->json([
+                    'message' => 'The external tourist service is currently unreachable.'
+                ], 503);
+            }
+
+   
+            return response()->json([
+                'data' => $response->json()
+            ]);
+
+        } catch (\Exception $e) {
+  
+            return response()->json([
+                'message' => 'Could not connect to the tourist spots provider.'
+            ], 500);
+        }
+    }
+
+    public function show($id)
+{
+    $url = "https://raw.githubusercontent.com/senseihatakekakashi/ph-tourist-spots/main/data.json";
+
+    try {
+        $response = Http::get($url);
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'External service unavailable'], 503);
+        }
+
+
+        $items = collect($response->json());
+
+
+        $item = $items->firstWhere('id', $id);
+
+        if (!$item) {
+            return response()->json(['message' => 'Tourist spot not found'], 404);
+        }
+
+        return response()->json(['data' => $item]);
+
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'Connection error'], 500);
+    }
+}
+
+}

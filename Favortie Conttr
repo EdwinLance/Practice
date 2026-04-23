@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Favorites;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class FavoriteController extends Controller
+{
+    public function index(Request $request)
+    {
+        $favorites = Favorites::where('user_id', $request->user()->id)->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $favorites
+        ], 200);
+    }
+
+    public function store(Request $request)
+    {
+        if (!$request->user()) {
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'location' => 'required|string|max:255',
+            'type' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $userId = $request->user()->id;
+
+        $exists = Favorites::where('user_id', $userId)
+            ->where('name', $request->name)
+            ->where('location', $request->location)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'This spot is already in your favorites.'
+            ], 409);
+        }
+
+        $favorite = Favorites::create([
+            'user_id' => $userId,
+            'name' => $request->name,
+            'location' => $request->location,
+            'type' => $request->type,
+        ]);
+
+        return response()->json([
+            'message' => 'Spot saved to favorites successfully!',
+            'data' => $favorite
+        ], 201);
+    }
+}
